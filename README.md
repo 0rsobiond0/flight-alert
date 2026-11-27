@@ -22,7 +22,7 @@ Durante i test usare `DRY_RUN=true`. Non inserire token Telegram nel repository.
 PYTHONPATH=src .venv/bin/python -m flight_alert --once --dry-run
 ```
 
-Il worker usa una fonte pubblica configurata esplicitamente e non esegue bypass di CAPTCHA, Tor, rotazione IP o scraping aggressivo. Se non è configurata una fonte con payload strutturato, il ciclo non produce offerte: è preferibile a notificare prezzi non verificabili.
+Il worker usa una fonte pubblica configurata esplicitamente e non esegue bypass di CAPTCHA, Tor, rotazione IP o scraping aggressivo. La prima versione accetta un payload strutturato validato: se non è configurata una fonte compatibile, il ciclo non produce offerte e lo segnala nei log; è preferibile a notificare prezzi non verificabili. L’elenco delle destinazioni è quindi best-effort, non esaustivo.
 
 ## Installazione nel LXC
 
