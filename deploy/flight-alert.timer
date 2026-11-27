@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Flight Alert every 6 hours
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=6h
+Persistent=true
+Unit=flight-alert.service
+
+[Install]
+WantedBy=timers.target
