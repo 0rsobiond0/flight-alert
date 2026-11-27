@@ -27,8 +27,9 @@ def test_policy_realerts_after_ten_euro_drop(tmp_path):
     policy = AlertPolicy()
     first = offer("80")
     fingerprint = offer_fingerprint(first)
+    now = datetime.now(timezone.utc)
     assert policy.should_send(first, store) is True
-    store.record(first, fingerprint)
+    store.record(first, fingerprint, notified_at=now)
     assert policy.should_send(offer("75"), store) is False
     assert policy.should_send(offer("70"), store) is True
 

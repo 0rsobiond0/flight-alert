@@ -19,11 +19,22 @@ class SearchReport:
     provider_errors: list[str]
 
 
+def filter_round_trip_offers(offers: Sequence[FlightOffer], requested_nights: int, passengers: int) -> list[FlightOffer]:
+    return [
+        offer for offer in offers
+        if offer.offer_type == "round_trip"
+        and len(offer.legs) == 2
+        and offer.nights == requested_nights
+        and offer.passengers == passengers
+    ]
+
+
 def combine_one_way(
     outbound: Sequence[FlightOffer],
     inbound: Sequence[FlightOffer],
     min_nights: int,
     max_nights: int,
+    passengers: int = 2,
 ) -> list[FlightOffer]:
     combined: list[FlightOffer] = []
     for out in outbound:
@@ -39,6 +50,8 @@ def combine_one_way(
                 out_leg.destination != back_leg.origin
                 or out_leg.origin != back_leg.destination
                 or not min_nights <= nights <= max_nights
+                or out.passengers != passengers
+                or back.passengers != passengers
                 or back_leg.departure <= out_leg.arrival
             ):
                 continue
@@ -71,22 +84,33 @@ class SearchEngine:
         skipped = 0
         start = date.today()
         end = self.settings.search_until
+        query_cache: dict[tuple[str, str, int], list[FlightOffer]] = {}
+
+        def query(origin: str, destination: str, nights: int) -> list[FlightOffer]:
+            key = (origin, destination, nights)
+            if key not in query_cache:
+                query_cache[key] = self.provider.search(
+                    origin, destination, start, end, nights, self.settings.passengers
+                )
+            return query_cache[key]
+
         for destination in destinations:
             for origin in self.settings.origins:
                 for nights in range(self.settings.min_nights, self.settings.max_nights + 1):
                     try:
-                        direct = self.provider.search(origin, destination, start, end, nights, self.settings.passengers)
+                        direct = query(origin, destination, nights)
                         completed += 1
                         offers.extend(
-                            offer for offer in direct if offer.total_mandatory_eur <= self.settings.max_total_eur
+                            offer for offer in filter_round_trip_offers(direct, nights, self.settings.passengers)
+                            if offer.total_mandatory_eur <= self.settings.max_total_eur
                         )
-                        outbound = self.provider.search(origin, destination, start, end, 1, self.settings.passengers)
-                        inbound = self.provider.search(destination, origin, start, end, 1, self.settings.passengers)
+                        outbound = query(origin, destination, 1)
+                        inbound = query(destination, origin, 1)
                         completed += 2
                         offers.extend(
                             offer
                             for offer in combine_one_way(
-                                outbound, inbound, self.settings.min_nights, self.settings.max_nights
+                                outbound, inbound, self.settings.min_nights, self.settings.max_nights, self.settings.passengers
                             )
                             if offer.nights == nights and offer.total_mandatory_eur <= self.settings.max_total_eur
                         )

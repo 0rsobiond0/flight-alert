@@ -26,6 +26,6 @@ def test_invalid_configuration_is_not_hidden(monkeypatch):
 
 
 def test_unknown_provider_url_is_rejected():
-    settings = Settings.from_env({"DRY_RUN": "true", "PROVIDER_URLS": "https://not-allowed.example"})
+    settings = Settings.from_env({"DRY_RUN": "true", "PROVIDER": "bogus-provider"})
     with pytest.raises(ValueError, match="provider"):
         build_provider(settings)

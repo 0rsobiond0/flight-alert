@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
 from typing import Mapping
 
 
@@ -19,6 +20,9 @@ class Settings:
     telegram_chat_id: str | None
     dry_run: bool
     provider_urls: tuple[str, ...]
+    provider: str
+    state_db: Path
+    max_routes: int
 
     @classmethod
     def from_env(cls, environ: Mapping[str, str] | None = None) -> "Settings":
@@ -54,7 +58,10 @@ class Settings:
             telegram_bot_token=token,
             telegram_chat_id=chat_id,
             dry_run=dry_run,
-            provider_urls=_csv(env.get("PROVIDER_URLS", "")),
+            provider_urls=_urls(env.get("PROVIDER_URLS", "")),
+            provider=env.get("PROVIDER", "ryanair").strip().lower(),
+            state_db=Path(env.get("STATE_DB", "offers.db")),
+            max_routes=_positive_integer(env.get("MAX_ROUTES", "100"), "MAX_ROUTES"),
         )
 
 
@@ -65,6 +72,10 @@ def _optional(value: str | None) -> str | None:
 
 def _csv(value: str) -> tuple[str, ...]:
     return tuple(item.strip().upper() for item in value.split(",") if item.strip())
+
+
+def _urls(value: str) -> tuple[str, ...]:
+    return tuple(item.strip() for item in value.split(",") if item.strip())
 
 
 def _integer(value: str, name: str) -> int:
